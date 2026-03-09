@@ -18,7 +18,7 @@ exports.getAllLicenses = async (req, res) => {
 // POST generate license (admin version)
 exports.generateLicense = async (req, res) => {
   try {
-    const { expiry_days = 365 } = req.body;
+    const { expiry_days = 6000 } = req.body;
 
     const id = uuidv4();
     const licenseKey = generateLicenseKey();
@@ -81,10 +81,11 @@ exports.resetDevice = async (req, res) => {
     }
 
     await pool.promise().query(
-      'UPDATE licenses SET device_id = NULL WHERE id = ?', [id]
+      'UPDATE licenses SET device_id = NULL, device_id2 = NULL WHERE id = ?', 
+      [id]
     );
 
-    res.json({ message: 'Device binding reset. License can be activated on a new device.' });
+    res.json({ message: 'All device bindings reset. License can be activated on new devices.' });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Server error' });

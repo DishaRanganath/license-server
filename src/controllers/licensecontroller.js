@@ -2,7 +2,7 @@ const pool = require('../config/db');
 const {v4: uuidv4} = require('uuid');
 const generateLicenseKey = require('../utils/generateLicense');
 const jwt = require('jsonwebtoken');
-const { privateKey } = require('../config/keys');
+const { privateKey,publicKey } = require('../config/keys');
 
 exports.generateLicense =async (req, res) => {
     try {
@@ -12,7 +12,7 @@ exports.generateLicense =async (req, res) => {
       
         //expiry date set to 1 year from now
         const expiryDate = new Date();
-        expiryDate.setFullYear(expiryDate.getFullYear() + 1);
+        expiryDate.setFullYear(expiryDate.getFullYear() + 20);
 
         const query = 'INSERT INTO licenses (id, license_key, expiry_date,status) VALUES (?, ?, ?)';
         await pool.promise().query(query, [id, licenseKey, expiryDate,'active']);
@@ -62,14 +62,41 @@ exports.activateLicense = async (req, res) => {
     }
 
     // Device binding
-    if (!license.device_id) {
-      await pool.promise().query(
-        'UPDATE licenses SET device_id = ? WHERE id = ?',
-        [device_id, license.id]
-      );
-    } else if (license.device_id !== device_id) {
-      return res.status(403).json({ message: 'License already activated on another device' });
-    }
+    // if (!license.device_id) {
+    //   await pool.promise().query(
+    //     'UPDATE licenses SET device_id = ? WHERE id = ?',
+    //     [device_id, license.id]
+    //   );
+    // } else if (license.device_id !== device_id) {
+    //   return res.status(403).json({ message: 'License already activated on another device' });
+    // }
+    // Device binding — supports 2 devices
+if (!license.device_id) {
+  // First activation
+  await pool.promise().query(
+    'UPDATE licenses SET device_id = ? WHERE id = ?',
+    [device_id, license.id]
+  );
+
+} else if (license.device_id === device_id) {
+  // Same device 1 — allow
+  
+} else if (!license.device_id2) {
+  // Second activation — bind second device
+  await pool.promise().query(
+    'UPDATE licenses SET device_id2 = ? WHERE id = ?',
+    [device_id, license.id]
+  );
+
+} else if (license.device_id2 === device_id) {
+  // Same device 2 — allow
+
+} else {
+  // Third device — reject
+  return res.status(403).json({ 
+    message: 'License already activated on 2 devices. Maximum limit reached.' 
+  });
+}
 
     // Create JWT
     const token = jwt.sign(
@@ -93,52 +120,56 @@ exports.activateLicense = async (req, res) => {
   }
 };
 
-// exports.revokeLicense = async (req, res) => {
-//   try {
-//     const { license_key } = req.body;
+exports.verifyDevice = async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
 
-//     if (!license_key) {
-//       return res.status(400).json({ message: 'License key required' });
-//     }
+    if (!authHeader) {
+      return res.status(401).json({ valid: false, message: 'No token provided' });
+    }
 
-//     const [result] = await pool.promise().query(
-//       'UPDATE licenses SET status = ? WHERE license_key = ?',
-//       ['revoked', license_key]
-//     );
+    const token = authHeader.split(' ')[1];
 
-//     if (result.affectedRows === 0) {
-//       return res.status(404).json({ message: 'License not found' });
-//     }
+    // Verify JWT signature
+    const decoded = jwt.verify(token, publicKey, { algorithms: ['RS256'] });
 
-//     res.json({ message: 'License revoked successfully' });
+    // Check license in DB
+    const [rows] = await pool.promise().query(
+      'SELECT * FROM licenses WHERE id = ?',
+      [decoded.license_id]
+    );
 
-//   } catch (error) {
-//     console.error(error);
-//     res.status(500).json({ message: 'Internal server error' });
-//   }
-// };
-// exports.verifyLicense = async (req, res) => {
-//   try {
-//     const { token } = req.body;
+    if (rows.length === 0) {
+      return res.status(403).json({ valid: false, message: 'License not found' });
+    }
 
-//     if (!token) {
-//       return res.status(400).json({ message: 'Token required' });
-//     }
+    const license = rows[0];
 
-//     const decoded = jwt.verify(token, privateKey, {
-//       algorithms: ['RS256']
-//     });
+    // Check status
+    if (license.status !== 'active') {
+      return res.status(403).json({ valid: false, message: 'License revoked' });
+    }
 
-//     res.json({
-//       valid: true,
-//       license_id: decoded.license_id,
-//       device_id: decoded.device_id
-//     });
+    // Check expiry
+    if (new Date(license.expiry_date) < new Date()) {
+      return res.status(403).json({ valid: false, message: 'License expired' });
+    }
 
-//   } catch (error) {
-//     return res.status(403).json({
-//       valid: false,
-//       message: 'Invalid or expired license token'
-//     });
-//   }
-// };
+    // Check device is still bound
+    const validDevice =
+      decoded.device_id === license.device_id ||
+      decoded.device_id === license.device_id2;
+
+    if (!validDevice) {
+      return res.status(403).json({ 
+        valid: false, 
+        message: 'Device binding reset. Please reactivate.' 
+      });
+    }
+
+    res.json({ valid: true, message: 'License valid' });
+
+  } catch (error) {
+    return res.status(403).json({ valid: false, message: 'Invalid token' });
+  }
+};

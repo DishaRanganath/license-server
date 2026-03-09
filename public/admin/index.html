@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>License Admin Dashboard</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #0f172a;
+      color: #e2e8f0;
+      min-height: 100vh;
+    }
+
+    /* LOGIN */
+    #loginScreen {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    .login-box {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 12px;
+      padding: 40px;
+      width: 380px;
+      text-align: center;
+    }
+
+    .login-box h2 {
+      color: #60a5fa;
+      margin-bottom: 8px;
+      font-size: 22px;
+    }
+
+    .login-box p {
+      color: #94a3b8;
+      font-size: 13px;
+      margin-bottom: 28px;
+    }
+
+    /* DASHBOARD */
+    #dashboard { display: none; }
+
+    header {
+      background: #1e293b;
+      border-bottom: 1px solid #334155;
+      padding: 16px 32px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    header h1 { color: #60a5fa; font-size: 20px; }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .api-key-display {
+      font-size: 12px;
+      color: #64748b;
+    }
+
+    main { padding: 32px; max-width: 1200px; margin: 0 auto; }
+
+    /* STATS */
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+
+    .stat-card {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 10px;
+      padding: 20px;
+      text-align: center;
+    }
+
+    .stat-card .number {
+      font-size: 32px;
+      font-weight: bold;
+      color: #60a5fa;
+    }
+
+    .stat-card .label {
+      font-size: 12px;
+      color: #94a3b8;
+      margin-top: 4px;
+    }
+
+    /* GENERATE SECTION */
+    .section {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 10px;
+      padding: 24px;
+      margin-bottom: 24px;
+    }
+
+    .section h3 {
+      color: #e2e8f0;
+      margin-bottom: 16px;
+      font-size: 16px;
+    }
+
+    .generate-row {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+
+    /* TABLE */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    th {
+      background: #0f172a;
+      color: #94a3b8;
+      padding: 10px 14px;
+      text-align: left;
+      font-weight: 600;
+      border-bottom: 1px solid #334155;
+    }
+
+    td {
+      padding: 12px 14px;
+      border-bottom: 1px solid #1e293b;
+      color: #cbd5e1;
+    }
+
+    tr:hover td { background: #1e293b; }
+
+    .badge {
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    .badge-active { background: #064e3b; color: #34d399; }
+    .badge-revoked { background: #450a0a; color: #f87171; }
+
+    /* INPUTS & BUTTONS */
+    input, select {
+      background: #0f172a;
+      border: 1px solid #334155;
+      color: #e2e8f0;
+      padding: 9px 14px;
+      border-radius: 6px;
+      font-size: 13px;
+      outline: none;
+    }
+
+    input:focus, select:focus {
+      border-color: #60a5fa;
+    }
+
+    button {
+      padding: 9px 18px;
+      border-radius: 6px;
+      border: none;
+      font-size: 13px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: opacity 0.2s;
+    }
+
+    button:hover { opacity: 0.85; }
+    button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .btn-primary { background: #2563eb; color: white; }
+    .btn-danger { background: #dc2626; color: white; }
+    .btn-warning { background: #d97706; color: white; }
+    .btn-success { background: #059669; color: white; }
+    .btn-ghost {
+      background: transparent;
+      color: #60a5fa;
+      border: 1px solid #334155;
+    }
+
+    .action-buttons { display: flex; gap: 6px; flex-wrap: wrap; }
+
+    /* TOAST */
+    #toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      padding: 12px 20px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      display: none;
+      z-index: 999;
+      animation: fadein 0.3s;
+    }
+
+    @keyframes fadein { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; } }
+
+    .toast-success { background: #064e3b; color: #34d399; border: 1px solid #34d399; }
+    .toast-error { background: #450a0a; color: #f87171; border: 1px solid #f87171; }
+
+    /* MODAL */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.7);
+      justify-content: center;
+      align-items: center;
+      z-index: 100;
+    }
+
+    .modal-overlay.active { display: flex; }
+
+    .modal {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 12px;
+      padding: 32px;
+      width: 400px;
+    }
+
+    .modal h3 { margin-bottom: 16px; color: #e2e8f0; }
+    .modal p { color: #94a3b8; font-size: 13px; margin-bottom: 20px; }
+    .modal-buttons { display: flex; gap: 10px; justify-content: flex-end; }
+
+    .generated-key {
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      padding: 16px;
+      text-align: center;
+      margin-top: 16px;
+      display: none;
+    }
+
+    .generated-key .key-text {
+      font-size: 18px;
+      font-weight: bold;
+      color: #34d399;
+      letter-spacing: 2px;
+      margin-bottom: 10px;
+    }
+
+    .search-row {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .search-row input { flex: 1; }
+
+    #noResults {
+      text-align: center;
+      color: #64748b;
+      padding: 40px;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+
+<!-- LOGIN SCREEN -->
+<div id="loginScreen">
+  <div class="login-box">
+    <h2>🔐 Admin Dashboard</h2>
+    <p>License Management System</p>
+    <input type="password" id="apiKeyInput" placeholder="Enter Admin API Key"
+      style="width:100%; margin-bottom:12px;" />
+    <button class="btn-primary" style="width:100%; padding:12px;"
+      onclick="login()">Login</button>
+    <p id="loginError" style="color:#f87171; margin-top:12px; font-size:13px;"></p>
+  </div>
+</div>
+
+<!-- DASHBOARD -->
+<div id="dashboard">
+  <header>
+    <h1>⚙️ License Admin Dashboard</h1>
+    <div class="header-right">
+      <span class="api-key-display" id="apiKeyDisplay"></span>
+      <button class="btn-ghost" onclick="logout()">Logout</button>
+    </div>
+  </header>
+
+  <main>
+    <!-- STATS -->
+    <div class="stats">
+      <div class="stat-card">
+        <div class="number" id="totalCount">0</div>
+        <div class="label">Total Licenses</div>
+      </div>
+      <div class="stat-card">
+        <div class="number" id="activeCount" style="color:#34d399">0</div>
+        <div class="label">Active</div>
+      </div>
+      <div class="stat-card">
+        <div class="number" id="revokedCount" style="color:#f87171">0</div>
+        <div class="label">Revoked</div>
+      </div>
+      <div class="stat-card">
+        <div class="number" id="activatedCount" style="color:#fbbf24">0</div>
+        <div class="label">Device Bound</div>
+      </div>
+    </div>
+
+    <!-- GENERATE -->
+    <div class="section">
+      <h3>➕ Generate New License</h3>
+      <div class="generate-row">
+        <input type="number" id="expiryDays" value="6000"
+          min="1" style="width:120px;" placeholder="Days" />
+        <label style="color:#94a3b8; font-size:13px;">days expiry</label>
+        <button class="btn-success" onclick="generateLicense()">Generate License</button>
+        <button class="btn-ghost" onclick="loadLicenses()">🔄 Refresh</button>
+      </div>
+      <div class="generated-key" id="generatedKeyBox">
+        <div class="key-text" id="generatedKeyText"></div>
+        <button class="btn-ghost" onclick="copyKey()">📋 Copy Key</button>
+      </div>
+    </div>
+
+    <!-- LICENSE TABLE -->
+    <div class="section">
+      <h3>📋 All Licenses</h3>
+      <div class="search-row">
+        <input type="text" id="searchInput"
+          placeholder="Search by license key or device ID..."
+          oninput="filterTable()" />
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>License Key</th>
+            <th>Status</th>
+            <th>Device Bound</th>
+            <th>Expiry Date</th>
+            <th>Created</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="licenseTableBody"></tbody>
+      </table>
+      <div id="noResults">No licenses found.</div>
+    </div>
+  </main>
+</div>
+
+<!-- EXTEND MODAL -->
+<div class="modal-overlay" id="extendModal">
+  <div class="modal">
+    <h3>📅 Extend License</h3>
+    <p>Enter number of days to extend this license from its current expiry date.</p>
+    <input type="number" id="extendDays" value="365" min="1"
+      style="width:100%; margin-bottom:16px;" placeholder="Days to extend" />
+    <div class="modal-buttons">
+      <button class="btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn-primary" onclick="confirmExtend()">Extend</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<script>
+  const API_BASE = window.location.origin;
+  let adminKey = '';
+  let allLicenses = [];
+  let extendTargetId = '';
+
+  // ─── AUTH ───────────────────────────────────────────
+  async function login() {
+    const key = document.getElementById('apiKeyInput').value.trim();
+    if (!key) return;
+
+    // Test key by calling licenses endpoint
+    const res = await fetch(`${API_BASE}/api/admin/licenses`, {
+      headers: { 'x-admin-key': key }
+    });
+
+    if (res.ok) {
+      adminKey = key;
+      document.getElementById('loginScreen').style.display = 'none';
+      document.getElementById('dashboard').style.display = 'block';
+      document.getElementById('apiKeyDisplay').textContent =
+        `Key: ${key.substring(0, 8)}...`;
+      loadLicenses();
+    } else {
+      document.getElementById('loginError').textContent =
+        'Invalid admin key. Try again.';
+    }
+  }
+
+  function logout() {
+    adminKey = '';
+    document.getElementById('dashboard').style.display = 'none';
+    document.getElementById('loginScreen').style.display = 'flex';
+    document.getElementById('apiKeyInput').value = '';
+    document.getElementById('loginError').textContent = '';
+  }
+
+  // Allow Enter key on login
+  document.getElementById('apiKeyInput')
+    .addEventListener('keydown', e => { if (e.key === 'Enter') login(); });
+
+  // ─── LOAD LICENSES ──────────────────────────────────
+  async function loadLicenses() {
+    const res = await fetch(`${API_BASE}/api/admin/licenses`, {
+      headers: { 'x-admin-key': adminKey }
+    });
+    const data = await res.json();
+    allLicenses = data.licenses || [];
+    updateStats(allLicenses);
+    renderTable(allLicenses);
+  }
+
+  function updateStats(licenses) {
+    document.getElementById('totalCount').textContent = licenses.length;
+    document.getElementById('activeCount').textContent =
+      licenses.filter(l => l.status === 'active').length;
+    document.getElementById('revokedCount').textContent =
+      licenses.filter(l => l.status === 'revoked').length;
+    const boundCount = licenses.reduce((acc, l) => {
+  if (l.device_id) acc++;
+  if (l.device_id2) acc++;
+  return acc;
+}, 0);
+document.getElementById('activatedCount').textContent = boundCount;
+
+  }
+
+  function renderTable(licenses) {
+    const tbody = document.getElementById('licenseTableBody');
+    const noResults = document.getElementById('noResults');
+
+    if (licenses.length === 0) {
+      tbody.innerHTML = '';
+      noResults.style.display = 'block';
+      return;
+    }
+
+    noResults.style.display = 'none';
+    tbody.innerHTML = licenses.map(l => `
+      <tr>
+        <td style="font-family:monospace; color:#60a5fa;">${l.license_key}</td>
+        <td>
+          <span class="badge ${l.status === 'active' ? 'badge-active' : 'badge-revoked'}">
+            ${l.status}
+          </span>
+        </td>
+       <td style="font-size:12px;">
+  ${l.device_id 
+    ? `<span style="color:#fbbf24">🔒 Device 1</span>` 
+    : `<span style="color:#64748b">— unbound</span>`}
+  ${l.device_id2 
+    ? `<br><span style="color:#fbbf24">🔒 Device 2</span>` 
+    : l.device_id 
+      ? `<br><span style="color:#64748b">— slot 2 open</span>` 
+      : ''}
+</td>
+        <td style="font-size:12px;">${formatDate(l.expiry_date)}</td>
+        <td style="font-size:12px; color:#64748b;">${formatDate(l.created_at)}</td>
+        <td>
+          <div class="action-buttons">
+            ${l.status === 'active'
+              ? `<button class="btn-danger" onclick="revokeLicense('${l.id}')">Revoke</button>`
+              : `<span style="color:#64748b; font-size:12px;">Revoked</span>`
+            }
+            ${l.device_id
+              ? `<button class="btn-warning" onclick="resetDevice('${l.id}')">Reset Device</button>`
+              : ''
+            }
+            <button class="btn-primary" onclick="openExtendModal('${l.id}')">Extend</button>
+          </div>
+        </td>
+      </tr>
+    `).join('');
+  }
+
+  function filterTable() {
+    const query = document.getElementById('searchInput').value.toLowerCase();
+    const filtered = allLicenses.filter(l =>
+      l.license_key.toLowerCase().includes(query) ||
+      (l.device_id && l.device_id.toLowerCase().includes(query))
+    );
+    renderTable(filtered);
+  }
+
+  // ─── GENERATE ───────────────────────────────────────
+  async function generateLicense() {
+    const days = document.getElementById('expiryDays').value || 365;
+    const res = await fetch(`${API_BASE}/api/admin/generate`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-admin-key': adminKey
+      },
+      body: JSON.stringify({ expiry_days: parseInt(days) })
+    });
+
+    const data = await res.json();
+    if (res.ok) {
+      const box = document.getElementById('generatedKeyBox');
+      document.getElementById('generatedKeyText').textContent = data.license_key;
+      box.style.display = 'block';
+      showToast('License generated successfully!', 'success');
+      loadLicenses();
+    } else {
+      showToast(data.message || 'Failed to generate', 'error');
+    }
+  }
+
+  function copyKey() {
+    const key = document.getElementById('generatedKeyText').textContent;
+    navigator.clipboard.writeText(key);
+    showToast('License key copied!', 'success');
+  }
+
+  // ─── REVOKE ─────────────────────────────────────────
+  async function revokeLicense(id) {
+    if (!confirm('Are you sure you want to revoke this license?')) return;
+
+    const res = await fetch(`${API_BASE}/api/admin/licenses/${id}/revoke`, {
+      method: 'PATCH',
+      headers: { 'x-admin-key': adminKey }
+    });
+
+    const data = await res.json();
+    if (res.ok) {
+      showToast('License revoked successfully', 'success');
+      loadLicenses();
+    } else {
+      showToast(data.message || 'Failed to revoke', 'error');
+    }
+  }
+
+  // ─── RESET DEVICE ───────────────────────────────────
+  async function resetDevice(id) {
+    if (!confirm('Reset device binding? The license can be activated on a new device.')) return;
+
+    const res = await fetch(`${API_BASE}/api/admin/licenses/${id}/reset`, {
+      method: 'PATCH',
+      headers: { 'x-admin-key': adminKey }
+    });
+
+    const data = await res.json();
+    if (res.ok) {
+      showToast('Device binding reset successfully', 'success');
+      loadLicenses();
+    } else {
+      showToast(data.message || 'Failed to reset', 'error');
+    }
+  }
+
+  // ─── EXTEND ─────────────────────────────────────────
+  function openExtendModal(id) {
+    extendTargetId = id;
+    document.getElementById('extendModal').classList.add('active');
+  }
+
+  function closeModal() {
+    document.getElementById('extendModal').classList.remove('active');
+    extendTargetId = '';
+  }
+
+  async function confirmExtend() {
+    const days = document.getElementById('extendDays').value || 365;
+
+    const res = await fetch(`${API_BASE}/api/admin/licenses/${extendTargetId}/extend`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-admin-key': adminKey
+      },
+      body: JSON.stringify({ extend_days: parseInt(days) })
+    });
+
+    const data = await res.json();
+    closeModal();
+
+    if (res.ok) {
+      showToast(`License extended by ${days} days`, 'success');
+      loadLicenses();
+    } else {
+      showToast(data.message || 'Failed to extend', 'error');
+    }
+  }
+
+  // ─── HELPERS ────────────────────────────────────────
+  function formatDate(dateStr) {
+    if (!dateStr) return '—';
+    return new Date(dateStr).toLocaleDateString('en-GB', {
+      day: '2-digit', month: 'short', year: 'numeric'
+    });
+  }
+
+  function showToast(message, type) {
+    const toast = document.getElementById('toast');
+    toast.textContent = message;
+    toast.className = type === 'success' ? 'toast-success' : 'toast-error';
+    toast.style.display = 'block';
+    setTimeout(() => { toast.style.display = 'none'; }, 3000);
+  }
+</script>
+</body>
+</html>
+

@@ -1,5 +1,7 @@
 const express =require('express');
+const path = require('path');
 const app=express();
+
 
 app.use(express.json());
 
@@ -12,5 +14,8 @@ app.use('/api', licenseRoutes);
 
 const adminRoutes = require('./routes/adminRoutes');
 app.use('/api/admin', adminRoutes);
+
+// Serve static admin dashboard
+app.use('/admin', express.static(path.join(__dirname, '../public/admin')));
 
 module.exports = app;
