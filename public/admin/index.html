@@ -317,7 +317,7 @@
       </div>
     </div>
 
-    <!-- GENERATE -->
+    <!-- GENERATE 
     <div class="section">
       <h3>➕ Generate New License</h3>
       <div class="generate-row">
@@ -331,7 +331,53 @@
         <div class="key-text" id="generatedKeyText"></div>
         <button class="btn-ghost" onclick="copyKey()">📋 Copy Key</button>
       </div>
+    </div>-->
+    <!-- GENERATE SECTION -->
+<div class="section">
+  <h3>➕ Generate New License</h3>
+  <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px;">
+    <div>
+      <label style="color:#94a3b8; font-size:12px;">Expiry Days</label><br>
+      <input type="number" id="expiryDays" value="5475" min="1" style="width:100%; margin-top:4px;" />
     </div>
+    <div>
+      <label style="color:#94a3b8; font-size:12px;">Max Devices (1-6)</label><br>
+      <select id="maxDevices" style="width:100%; margin-top:4px;">
+        <option value="1">1 Device</option>
+        <option value="2">2 Devices</option>
+        <option value="3">3 Devices</option>
+        <option value="4">4 Devices</option>
+        <option value="5">5 Devices</option>
+        <option value="6">6 Devices</option>
+      </select>
+    </div>
+  </div>
+  <div style="margin-bottom:16px;">
+    <label style="color:#94a3b8; font-size:12px; display:block; margin-bottom:8px;">Feature Access</label>
+    <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:10px;">
+      <label style="display:flex; align-items:center; gap:8px; color:#e2e8f0; font-size:13px; background:#0f172a; padding:10px; border-radius:6px; border:1px solid #334155; cursor:pointer;">
+        <input type="checkbox" id="feat_flatness" style="width:16px; height:16px;"> Flatness
+      </label>
+      <label style="display:flex; align-items:center; gap:8px; color:#e2e8f0; font-size:13px; background:#0f172a; padding:10px; border-radius:6px; border:1px solid #334155; cursor:pointer;">
+        <input type="checkbox" id="feat_straightness" style="width:16px; height:16px;"> Straightness
+      </label>
+      <label style="display:flex; align-items:center; gap:8px; color:#e2e8f0; font-size:13px; background:#0f172a; padding:10px; border-radius:6px; border:1px solid #334155; cursor:pointer;">
+        <input type="checkbox" id="feat_perpendicularity" style="width:16px; height:16px;"> Perpendicularity
+      </label>
+      <label style="display:flex; align-items:center; gap:8px; color:#e2e8f0; font-size:13px; background:#0f172a; padding:10px; border-radius:6px; border:1px solid #334155; cursor:pointer;">
+        <input type="checkbox" id="feat_parallelism" style="width:16px; height:16px;"> Parallelism
+      </label>
+    </div>
+  </div>
+  <div style="display:flex; gap:12px;">
+    <button class="btn-success" onclick="generateLicense()">Generate License</button>
+    <button class="btn-ghost" onclick="loadLicenses()">🔄 Refresh</button>
+  </div>
+  <div class="generated-key" id="generatedKeyBox">
+    <div class="key-text" id="generatedKeyText"></div>
+    <button class="btn-ghost" onclick="copyKey()">📋 Copy Key</button>
+  </div>
+</div>
 
     <!-- LICENSE TABLE -->
     <div class="section">
@@ -442,54 +488,59 @@
 document.getElementById('activatedCount').textContent = boundCount;
 
   }
+ 
+ function renderTable(licenses) {
+  const tbody = document.getElementById('licenseTableBody');
+  const noResults = document.getElementById('noResults');
 
-  function renderTable(licenses) {
-    const tbody = document.getElementById('licenseTableBody');
-    const noResults = document.getElementById('noResults');
+  if (licenses.length === 0) {
+    tbody.innerHTML = '';
+    noResults.style.display = 'block';
+    return;
+  }
 
-    if (licenses.length === 0) {
-      tbody.innerHTML = '';
-      noResults.style.display = 'block';
-      return;
-    }
+  noResults.style.display = 'none';
+  tbody.innerHTML = licenses.map(l => {
+    let devices = [];
+    try { devices = typeof l.devices === 'string' ? JSON.parse(l.devices) : l.devices || []; }
+    catch { devices = []; }
 
-    noResults.style.display = 'none';
-    tbody.innerHTML = licenses.map(l => `
+    const featBadge = (val, label) =>
+      `<span style="padding:2px 8px; border-radius:10px; font-size:11px; font-weight:600;
+        background:${val ? '#064e3b' : '#1e293b'};
+        color:${val ? '#34d399' : '#475569'};
+        border:1px solid ${val ? '#34d399' : '#334155'}">
+        ${label}
+      </span>`;
+
+    return `
       <tr>
         <td style="font-family:monospace; color:#60a5fa;">${l.license_key}</td>
+        <td><span class="badge ${l.status === 'active' ? 'badge-active' : 'badge-revoked'}">${l.status}</span></td>
+        <td style="font-size:12px; color:#fbbf24;">${devices.length} / ${l.max_devices}</td>
         <td>
-          <span class="badge ${l.status === 'active' ? 'badge-active' : 'badge-revoked'}">
-            ${l.status}
-          </span>
+          <div style="display:flex; gap:4px; flex-wrap:wrap;">
+            ${featBadge(l.feature_flatness, 'Flatness')}
+            ${featBadge(l.feature_straightness, 'Straightness')}
+            ${featBadge(l.feature_perpendicularity, 'Perpendicularity')}
+            ${featBadge(l.feature_parallelism, 'Parallelism')}
+          </div>
         </td>
-       <td style="font-size:12px;">
-  ${l.device_id 
-    ? `<span style="color:#fbbf24">🔒 Device 1</span>` 
-    : `<span style="color:#64748b">— unbound</span>`}
-  ${l.device_id2 
-    ? `<br><span style="color:#fbbf24">🔒 Device 2</span>` 
-    : l.device_id 
-      ? `<br><span style="color:#64748b">— slot 2 open</span>` 
-      : ''}
-</td>
         <td style="font-size:12px;">${formatDate(l.expiry_date)}</td>
-        <td style="font-size:12px; color:#64748b;">${formatDate(l.created_at)}</td>
         <td>
           <div class="action-buttons">
             ${l.status === 'active'
               ? `<button class="btn-danger" onclick="revokeLicense('${l.id}')">Revoke</button>`
-              : `<span style="color:#64748b; font-size:12px;">Revoked</span>`
-            }
-            ${l.device_id
-              ? `<button class="btn-warning" onclick="resetDevice('${l.id}')">Reset Device</button>`
-              : ''
-            }
+              : `<span style="color:#64748b; font-size:12px;">Revoked</span>`}
+            <button class="btn-warning" onclick="resetDevice('${l.id}')">Reset Devices</button>
             <button class="btn-primary" onclick="openExtendModal('${l.id}')">Extend</button>
+            <button class="btn-ghost" onclick="openEditModal('${l.id}', ${l.max_devices}, ${l.feature_flatness ? 1:0}, ${l.feature_straightness ? 1:0}, ${l.feature_perpendicularity ? 1:0}, ${l.feature_parallelism ? 1:0})">Edit</button>
           </div>
         </td>
       </tr>
-    `).join('');
-  }
+    `;
+  }).join('');
+}
 
   function filterTable() {
     const query = document.getElementById('searchInput').value.toLowerCase();
@@ -502,27 +553,40 @@ document.getElementById('activatedCount').textContent = boundCount;
 
   // ─── GENERATE ───────────────────────────────────────
   async function generateLicense() {
-    const days = document.getElementById('expiryDays').value || 365;
-    const res = await fetch(`${API_BASE}/api/admin/generate`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-admin-key': adminKey
-      },
-      body: JSON.stringify({ expiry_days: parseInt(days) })
-    });
+  const days = document.getElementById('expiryDays').value || 5475;
+  const maxDevices = document.getElementById('maxDevices').value || 1;
+  const featFlatness = document.getElementById('feat_flatness').checked;
+  const featStraightness = document.getElementById('feat_straightness').checked;
+  const featPerpendicularity = document.getElementById('feat_perpendicularity').checked;
+  const featParallelism = document.getElementById('feat_parallelism').checked;
 
-    const data = await res.json();
-    if (res.ok) {
-      const box = document.getElementById('generatedKeyBox');
-      document.getElementById('generatedKeyText').textContent = data.license_key;
-      box.style.display = 'block';
-      showToast('License generated successfully!', 'success');
-      loadLicenses();
-    } else {
-      showToast(data.message || 'Failed to generate', 'error');
-    }
+  const res = await fetch(`${API_BASE}/api/admin/generate`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-admin-key': adminKey
+    },
+    body: JSON.stringify({
+      expiry_days: parseInt(days),
+      max_devices: parseInt(maxDevices),
+      feature_flatness: featFlatness,
+      feature_straightness: featStraightness,
+      feature_perpendicularity: featPerpendicularity,
+      feature_parallelism: featParallelism
+    })
+  });
+
+  const data = await res.json();
+  if (res.ok) {
+    const box = document.getElementById('generatedKeyBox');
+    document.getElementById('generatedKeyText').textContent = data.license_key;
+    box.style.display = 'block';
+    showToast('License generated successfully!', 'success');
+    loadLicenses();
+  } else {
+    showToast(data.message || 'Failed to generate', 'error');
   }
+}
 
   function copyKey() {
     const key = document.getElementById('generatedKeyText').textContent;
@@ -615,7 +679,91 @@ document.getElementById('activatedCount').textContent = boundCount;
     toast.style.display = 'block';
     setTimeout(() => { toast.style.display = 'none'; }, 3000);
   }
+
+  let editTargetId = '';
+
+function openEditModal(id, maxDevices, flatness, straightness, perpendicularity, parallelism) {
+  editTargetId = id;
+  document.getElementById('editMaxDevices').value = maxDevices;
+  document.getElementById('edit_flatness').checked = flatness === 1;
+  document.getElementById('edit_straightness').checked = straightness === 1;
+  document.getElementById('edit_perpendicularity').checked = perpendicularity === 1;
+  document.getElementById('edit_parallelism').checked = parallelism === 1;
+  document.getElementById('editModal').classList.add('active');
+}
+
+function closeEditModal() {
+  document.getElementById('editModal').classList.remove('active');
+  editTargetId = '';
+}
+
+async function confirmEdit() {
+  const res = await fetch(`${API_BASE}/api/admin/licenses/${editTargetId}/update`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-admin-key': adminKey
+    },
+    body: JSON.stringify({
+      max_devices: parseInt(document.getElementById('editMaxDevices').value),
+      feature_flatness: document.getElementById('edit_flatness').checked,
+      feature_straightness: document.getElementById('edit_straightness').checked,
+      feature_perpendicularity: document.getElementById('edit_perpendicularity').checked,
+      feature_parallelism: document.getElementById('edit_parallelism').checked
+    })
+  });
+
+  const data = await res.json();
+  closeEditModal();
+
+  if (res.ok) {
+    showToast('License updated successfully', 'success');
+    loadLicenses();
+  } else {
+    showToast(data.message || 'Failed to update', 'error');
+  }
+}
+  
 </script>
+<!-- EDIT MODAL -->
+<div class="modal-overlay" id="editModal">
+  <div class="modal">
+    <h3>✏️ Edit License</h3>
+    <p>Update device limit and feature access for this license.</p>
+    <div style="margin-bottom:16px;">
+      <label style="color:#94a3b8; font-size:12px;">Max Devices</label><br>
+      <select id="editMaxDevices" style="width:100%; margin-top:4px;">
+        <option value="1">1 Device</option>
+        <option value="2">2 Devices</option>
+        <option value="3">3 Devices</option>
+        <option value="4">4 Devices</option>
+        <option value="5">5 Devices</option>
+        <option value="6">6 Devices</option>
+      </select>
+    </div>
+    <div style="margin-bottom:20px;">
+      <label style="color:#94a3b8; font-size:12px; display:block; margin-bottom:8px;">Feature Access</label>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+        <label style="display:flex; align-items:center; gap:8px; color:#e2e8f0; font-size:13px; background:#0f172a; padding:10px; border-radius:6px; border:1px solid #334155; cursor:pointer;">
+          <input type="checkbox" id="edit_flatness" style="width:16px;height:16px;"> Flatness
+        </label>
+        <label style="display:flex; align-items:center; gap:8px; color:#e2e8f0; font-size:13px; background:#0f172a; padding:10px; border-radius:6px; border:1px solid #334155; cursor:pointer;">
+          <input type="checkbox" id="edit_straightness" style="width:16px;height:16px;"> Straightness
+        </label>
+        <label style="display:flex; align-items:center; gap:8px; color:#e2e8f0; font-size:13px; background:#0f172a; padding:10px; border-radius:6px; border:1px solid #334155; cursor:pointer;">
+          <input type="checkbox" id="edit_perpendicularity" style="width:16px;height:16px;"> Perpendicularity
+        </label>
+        <label style="display:flex; align-items:center; gap:8px; color:#e2e8f0; font-size:13px; background:#0f172a; padding:10px; border-radius:6px; border:1px solid #334155; cursor:pointer;">
+          <input type="checkbox" id="edit_parallelism" style="width:16px;height:16px;"> Parallelism
+        </label>
+      </div>
+    </div>
+    <div class="modal-buttons">
+      <button class="btn-ghost" onclick="closeEditModal()">Cancel</button>
+      <button class="btn-primary" onclick="confirmEdit()">Save Changes</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>
 
