@@ -1,4 +1,4 @@
-require('dotenv').config({ override: false });
+//require('dotenv').config({ override: false });
 require('./src/config/db');
 
 const app = require('./src/app');
